@@ -1,0 +1,21 @@
+.ico_user {
+    height: var(--spacing-28);
+    color: var(--light-font-solid);
+    transition: color 0.3s ease; 
+    height: 3rem;
+}
+.account-menu__user-name {
+    cursor: default;
+}
+.account-menu__sign-out {
+    border-top: 1px solid #eee;
+    background-color: var(--primary-solid);    
+    gap: 1rem;
+}
+.account-menu__sign-out:hover {
+    background-color: var(--light-bg-solid);
+    color: var(--dark-solid);
+    border-top: none;
+    font-weight: 700;
+    border: 1px solid var(--dark-bg-solid);
+}

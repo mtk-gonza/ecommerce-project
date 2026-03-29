@@ -1,0 +1,10 @@
+.register {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.register .container {
+    display: flex;
+    justify-content: center;
+}

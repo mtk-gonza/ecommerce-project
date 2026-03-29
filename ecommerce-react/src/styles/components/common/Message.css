@@ -1,0 +1,14 @@
+.message p{
+    margin-top: 1rem;
+}
+
+.message__actions {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 1rem;
+}
+.message__action {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}

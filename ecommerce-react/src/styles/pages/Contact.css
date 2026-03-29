@@ -1,0 +1,22 @@
+.contact .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;    
+    height: 100%;
+}
+.contact__data {
+    padding: 2rem;    
+    border: 1px solid;
+    border-radius: 1rem;
+       
+}
+.contact__data h2 {
+    font-size: var(--font-large);
+    margin: 1rem; 
+}
+.contact__data p {
+    font-size: var(--font-medium);    
+    letter-spacing: 1px; 
+    margin: 1rem;    
+}

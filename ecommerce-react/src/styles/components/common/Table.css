@@ -1,0 +1,40 @@
+.table {
+    width: 100%;
+    overflow-x: auto;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+}
+
+th {
+    background-color: var(--dark-bg-solid);
+    color: #FAFAFF;
+    padding: var(--spacing-8);
+}
+
+th, td {
+    
+    font-size: var(--font-medium);
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+tr {
+    text-align: center;
+}
+
+.table__title {
+    font-size: var(--font-large);
+    padding: var(--spacing-8);
+}
+
+.table__pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-24);
+}
+.table__actions {
+    width: 110px;
+}
