@@ -2,6 +2,7 @@
 # GENERAL
 # =========================
 .env
+*.env
 *.log
 *.pid
 .DS_Store
