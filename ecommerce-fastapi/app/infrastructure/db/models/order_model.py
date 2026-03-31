@@ -23,7 +23,8 @@ class OrderModel(Base, TimestampMixin):
     shipping_cost = Column(Numeric(10, 2), default=0.00)
     discount_amount = Column(Numeric(10, 2), default=0.00)
     total_amount = Column(Numeric(10, 2), nullable=False)
-    
+    payment_reference = Column(String(100), nullable=True)
+
     notes = Column(Text, nullable=True)
 
     # ==================== RELACIONES ====================
@@ -57,7 +58,7 @@ class OrderModel(Base, TimestampMixin):
         return f"<Order(id={self.id}, number='{self.order_number}', status='{self.status.value}')>"
 
 
-class OrderItemModel(Base):
+class OrderItemModel(Base, TimestampMixin):
     __tablename__ = 'order_items'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -77,7 +78,7 @@ class OrderItemModel(Base):
     product = relationship("ProductModel", back_populates="order_items")
 
 
-class OrderStatusHistoryModel(Base):
+class OrderStatusHistoryModel(Base, TimestampMixin):
     __tablename__ = 'order_status_history'
 
     id = Column(Integer, primary_key=True, index=True)

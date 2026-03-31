@@ -207,19 +207,22 @@ class CartService:
         return user_cart
 
     # ==================== UTILS ====================
-    
     def validate_cart_for_checkout(self, cart_id: int) -> Dict[str, Any]:
-        """Valida que el carrito esté listo para checkout"""
         cart = self.cart_repository.find_by_id(cart_id)
         if not cart:
+            # Este caso SÍ puede lanzar excepción porque el carrito no existe
             raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
         
-        if not cart.items:
-            raise BusinessRuleException("El carrito está vacío")
-        
         issues = []
+        
+        # Validar que no esté vacío
+        if not cart.items:
+            issues.append("El carrito está vacío")
+        
+        # Validar cada item
         for item in cart.items:
             product = self.product_repository.find_by_id(item.product_id)
+            
             if not product:
                 issues.append(f"Producto {item.product_id} ya no existe")
             elif not product.is_available:
@@ -227,12 +230,13 @@ class CartService:
             elif product.stock < item.quantity:
                 issues.append(f"Stock insuficiente para '{product.name}'. Disponible: {product.stock}, Solicitado: {item.quantity}")
             elif product.final_price != item.unit_price:
-                issues.append(f"El precio de '{product.name}' ha cambiado")
-        
+                issues.append(f"El precio de '{product.name}' ha cambiado: ${product.final_price}")
         return {
             "valid": len(issues) == 0,
             "issues": issues,
-            "can_checkout": len(issues) == 0
+            "can_checkout": len(issues) == 0,
+            "items_count": len(cart.items),
+            "total_items": sum(item.quantity for item in cart.items)
         }
 
     def calculate_cart_totals(self, cart: Cart) -> Dict[str, Decimal]:

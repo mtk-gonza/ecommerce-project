@@ -1,7 +1,6 @@
-from typing import List, ClassVar
+from typing import List, ClassVar, Optional
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 
 class Settings(BaseSettings):
     # =========================
@@ -53,13 +52,32 @@ class Settings(BaseSettings):
     # =========================
     CORS_ALLOW_ORIGINS: str = "*"
 
+    # ==================== MERCADOPAGO ====================
+    MERCADOPAGO_ACCESS_TOKEN: str
+    MERCADOPAGO_PUBLIC_KEY: str
+    MERCADOPAGO_SANDBOX: bool
+    
+    # URLs para redirección después del pago
+    PAYMENT_SUCCESS_URL: str = f"{API_URL}/payment/success"
+    PAYMENT_PENDING_URL: str = f"{API_URL}/payment/pending"
+    PAYMENT_FAILURE_URL: str = f"{API_URL}/payment/failure"
+    
+    # Webhook
+    PAYMENT_WEBHOOK_URL: str = "https://tudominio.com/api/v1/payments/webhook"
+    PAYMENT_WEBHOOK_SECRET: Optional[str]
+    
+    # Timeouts y reintentos
+    PAYMENT_TIMEOUT_SECONDS: int = 30
+    PAYMENT_MAX_ATTEMPTS: int = 3
+
     # =========================
     # ⚙️ PYDANTIC CONFIG
     # =========================
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore"  # 🔥 importante
+        extra="ignore",  # 🔥 importante
+        case_sensitive = True
     )
 
     # =========================

@@ -35,3 +35,6 @@ class AuthenticationException(DomainException):
 class AuthorizationException(DomainException):
     """Error de autorización"""
     pass
+
+class PaymentProcessingException(DomainException):
+    pass

@@ -14,12 +14,18 @@ class ProductRepositoryImpl(ProductRepositoryPort):
     def save(self, product: Product) -> Product:
         model = ProductMapper.to_model(product)
         if product.id:
-            self.db.merge(model)
+            existing = self.db.query(ProductModel).filter(ProductModel.id == product.id).first()
+            if existing:
+                for key, value in model.__dict__.items():
+                    if key not in ['_sa_instance_state', 'id'] and hasattr(existing, key):
+                        setattr(existing, key, value)
+                self.db.refresh(existing)
         else:
             self.db.add(model)
+            self.db.flush()
+            product.id = model.id
         self.db.commit()
-        self.db.refresh(model)
-        return ProductMapper.to_entity(model)
+        return ProductMapper.to_entity(model if not product.id else existing)
 
     def find_by_id(self, product_id: int) -> Optional[Product]:
         model = self.db.query(ProductModel).filter(ProductModel.id == product_id).first()
