@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     # 🔹 ENTORNO
     # =========================
     ENVIRONMENT: str = "dev"
+    LOG_LEVEL: str = "INFO"
+    DEBUG: bool = False
 
     # =========================
     # 🔹 BASE DIR (NO es env)
@@ -16,7 +18,6 @@ class Settings(BaseSettings):
     # =========================
     # 🔹 CONFIG GENERAL
     # =========================
-    DEBUG: bool = False
     API_URL: str = "http://localhost:3050"
     API_PORT: int = 3050
     WEB_PORT: int = 3060
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     # =========================
     DB_TYPE: str = "sqlite"
 
-    SQLITE_DB: str = "dev.db"
+    SQLITE_DB: str = "ecommerce-dev.db"
 
     DB_USER: str | None = None
     DB_PASSWORD: str | None = None

@@ -1,15 +1,14 @@
-import os
-import logging
 import sys
+import logging
 from pathlib import Path
-from typing import Optional
 from .handlers import get_console_handler, get_file_handler, get_webhook_handler
 from app.config.settings import settings
 
 def setup_logging(
-    env: str = "dev",
-    log_level: Optional[str] = None,  # ← Permitir None para derivar de settings
+    env: str = settings.ENVIRONMENT,
+    log_level: str = settings.LOG_LEVEL,
     log_dir: str | Path = "logs",
+    debug: bool = settings.DEBUG,
     enable_file_logging: bool = True,
     enable_webhook_logging: bool = True,
 ) -> None:
@@ -18,17 +17,11 @@ def setup_logging(
     
     Args:
         env: Entorno ('dev', 'staging', 'prod')
-        log_level: Nivel mínimo (opcional, si None usa settings.DEBUG)
+        log_level: ('WARNINGS', 'DEBUG', 'INFO')
         log_dir: Directorio para archivos de log
         enable_file_logging: Si habilitar logs en archivo
         enable_webhook_logging: Si habilitar log separado para webhooks
     """
-    
-    # ✅ Determinar nivel efectivo: LOG_LEVEL env var > settings.DEBUG > default
-    if log_level is None:
-        # Si hay LOG_LEVEL en env, usarlo; sino derivar de settings.DEBUG
-        log_level = os.getenv("LOG_LEVEL", "DEBUG" if settings.DEBUG else "INFO")
-    
     # Root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
@@ -68,12 +61,12 @@ def setup_logging(
     logging.getLogger("httpx").setLevel(logging.WARNING)
     
     # ✅ Mostrar logs de SQL SOLO si DEBUG=True (boolean)
-    if env == "dev" and settings.DEBUG is True:
+    if env == "dev" and debug is True:
         logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
     
     # Log de inicio
     logger = logging.getLogger(__name__)
-    logger.info(f"🔧 Logging configurado: env={env}, level={log_level}, debug={settings.DEBUG}, dir={log_dir}")
+    logger.info(f"🔧 Logging configurado: env={env}, level={log_level}, debug={debug}, dir={log_dir}")
 
 
 def get_log_config(

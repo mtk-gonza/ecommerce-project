@@ -7,11 +7,14 @@ from app.infrastructure.logging import setup_logging
 
 setup_logging(
     env=settings.ENVIRONMENT,
-    log_level=None,
+    log_level=settings.LOG_LEVEL,
+    debug=settings.DEBUG,
     log_dir=settings.BASE_DIR / "logs",
     enable_file_logging=True,
     enable_webhook_logging=True,
 )
+
+print(settings.DEBUG)
 
 app = FastAPI(title="e-commerce fastapi", version="1.0.0")
 
