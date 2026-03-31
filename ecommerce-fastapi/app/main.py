@@ -7,7 +7,7 @@ from app.infrastructure.logging import setup_logging
 
 setup_logging(
     env=settings.ENVIRONMENT,
-    log_level="DEBUG" if settings.DEBUG else "INFO",
+    log_level=None,
     log_dir=settings.BASE_DIR / "logs",
     enable_file_logging=True,
     enable_webhook_logging=True,
