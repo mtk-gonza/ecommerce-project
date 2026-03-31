@@ -27,6 +27,9 @@ class Currency(Enum):
     MXN = "MXN"
     COP = "COP"
     BRL = "BRL"
+    CLP = "CLP"
+    PEN = "PEN"
+    UYU = "UYU"
 
 class AddressType(Enum):
     BILLING = "billing"

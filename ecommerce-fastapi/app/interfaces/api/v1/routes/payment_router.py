@@ -22,6 +22,7 @@ from app.domain.exceptions import (
     BusinessRuleException,
     PaymentProcessingException
 )
+from app.domain.enums import PaymentStatus
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -95,8 +96,63 @@ def get_payment_methods(
         "country": country
     }
 
-# ==================== AUTHENTICATED ENDPOINTS ====================
+# ==================== WEBHOOK ENDPOINT (Public, no auth) ====================
+@router.post("/webhook")
+async def handle_mercadopago_webhook(
+    request: Request,
+    payment_service: PaymentService = Depends(get_payment_service)
+):
+    """
+    Endpoint para recibir notificaciones webhook de MercadoPago.
+    NO requiere autenticación (MercadoPago lo llama directamente).
+    """
+    try:
+        body = await request.json()
+        topic = body.get("type") or body.get("topic")
+        data = body.get("data", {})
+        mp_payment_id = data.get("id")
+        
+        if not mp_payment_id:
+            return {"success": False, "error": "Payment ID no encontrado"}
+        
+        if topic == "payment":
+            # Obtener datos actualizados desde MP
+            mp_result = payment_service.mp_client.get_payment(str(mp_payment_id))
+            
+            if not mp_result["success"]:
+                return {"success": False, "error": "No se pudo obtener detalles del pago"}
+            
+            # Buscar pago por external_reference o mp_payment_id
+            mp_data = mp_result["data"]
+            external_ref = mp_data.get("external_reference")
+            
+            if external_ref:
+                payment = payment_service.payment_repository.find_by_id(int(external_ref))
+            else:
+                payment = payment_service.payment_repository.find_by_mp_payment_id(str(mp_payment_id))
+            
+            if payment:
+                # Actualizar estado desde MP
+                payment.update_from_mercadopago(mp_data)
+                payment_service.payment_repository.save(payment)
+                
+                # Si está aprobado, actualizar orden
+                if payment.status == PaymentStatus.APPROVED:
+                    order = payment_service.order_repository.find_by_id(payment.order_id)
+                    if order and order.status.value == "pending":
+                        order.confirm()
+                        payment_service.order_repository.save(order)
+                
+                return {"success": True, "payment_id": payment.id, "status": payment.status.value}
+        
+        return {"success": True, "message": "Webhook recibido"}
+        
+    except Exception as e:
+        import logging
+        logging.error(f"❌ Error en webhook: {e}", exc_info=True)
+        return {"success": False, "error": str(e)}
 
+# ==================== AUTHENTICATED ENDPOINTS ====================
 @router.get("/{payment_id}", response_model=PaymentSchema)
 def get_payment(
     payment_id: int,
@@ -185,61 +241,3 @@ def sync_payment_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except BusinessRuleException as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-
-# ==================== WEBHOOK ENDPOINT (Public, no auth) ====================
-@router.post("/webhook")
-async def handle_mercadopago_webhook(
-    request: Request,
-    payment_service: PaymentService = Depends(get_payment_service)
-):
-    """
-    Endpoint para recibir notificaciones webhook de MercadoPago.
-    """
-    try:
-        # Parsear cuerpo del webhook
-        body = await request.json()
-        
-        # Extraer tipo y ID
-        topic = body.get("type") or body.get("topic")
-        data = body.get("data", {})
-        payment_id = data.get("id")
-        
-        if not payment_id:
-            return {"success": False, "error": "Payment ID no encontrado"}
-        
-        # Si es un payment, obtener detalles completos de MP
-        if topic == "payment" or "payment" in str(body):
-            # Obtener datos actualizados del pago desde MercadoPago
-            mp_client = payment_service.mp_client
-            mp_result = mp_client.get_payment(str(payment_id))
-            
-            if mp_result["success"]:
-                # Buscar nuestro pago por external_reference o mp_payment_id
-                mp_data = mp_result["data"]
-                external_ref = mp_data.get("external_reference")
-                
-                if external_ref:
-                    # Buscar por nuestro payment_id
-                    payment = payment_service.payment_repository.find_by_id(int(external_ref))
-                else:
-                    # Buscar por mp_payment_id
-                    payment = payment_service.payment_repository.find_by_mp_payment_id(str(payment_id))
-                
-                if payment:
-                    # Actualizar estado
-                    payment.update_from_mercadopago(mp_data)
-                    payment_service.payment_repository.save(payment)
-                    
-                    # Si está aprobado, actualizar orden
-                    if payment.status.value == "approved":
-                        # TODO: Confirmar orden vía OrderService
-                        print(f"✅ Pago {payment.id} aprobado - Orden {payment.order_id}")
-                
-                return {"success": True, "message": "Webhook procesado"}
-        
-        return {"success": True, "message": "Webhook recibido"}
-        
-    except Exception as e:
-        # Loggear error pero retornar 200
-        print(f"❌ Error en webhook: {e}")
-        return {"success": False, "error": str(e)}

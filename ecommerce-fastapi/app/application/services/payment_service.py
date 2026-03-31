@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 from typing import Dict, Any, Optional, List
 from decimal import Decimal
 from datetime import datetime
@@ -15,6 +15,9 @@ from app.domain.exceptions import (
 from app.domain.enums import PaymentStatus, PaymentMethodType, PaymentProvider, Currency
 from app.infrastructure.external.mercadopago_client import MercadoPagoClient
 from app.config.settings import settings
+from app.infrastructure.logging import get_logger, log_with_context
+
+logger = get_logger(__name__)
 
 class PaymentService:
     """
@@ -33,17 +36,11 @@ class PaymentService:
         self.mp_client = mercadopago_client or MercadoPagoClient()
     
     # ==================== CREATE PAYMENT PREFERENCE ====================
-    
     def create_payment_preference(self, order_id: int, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Crea una preferencia de pago en MercadoPago para checkout con redirección.
-        
-        Proceso:
-        1. Validar orden y monto
-        2. Crear registro de pago en BD (estado: pending)
-        3. Crear preferencia en MercadoPago
-        4. Retornar URL de inicialización para redirigir al usuario
-        """
+        Crea una preferencia de pago en MercadoPago para Checkout Pro.  
+        Retorna init_point para redirigir al usuario a pagar.
+        """  
         # 1. Validar orden
         order = self.order_repository.find_by_id(order_id)
         if not order:
@@ -55,16 +52,16 @@ class PaymentService:
         if order.total_amount <= 0:
             raise ValidationError("El monto de la orden debe ser mayor a 0")
         
-        # 2. Verificar que no haya un pago existente para esta orden
-        existing_payment = self.payment_repository.find_by_order_id(order_id)
-        if existing_payment and existing_payment.status == PaymentStatus.APPROVED:
+        # 2. Verificar pago existente
+        existing = self.payment_repository.find_by_order_id(order_id)
+        if existing and existing.status == PaymentStatus.APPROVED:
             raise BusinessRuleException("Esta orden ya está pagada")
         
         # 3. Crear registro de pago en BD
         payment = Payment(
             id=None,
             order_id=order_id,
-            external_id=f"PAY-{uuid.uuid4().hex[:12].upper()}",
+            external_id=f"PAY-{uuid4().hex[:12].upper()}",
             amount=order.total_amount,
             currency=order.currency,
             status=PaymentStatus.PENDING,
@@ -85,10 +82,8 @@ class PaymentService:
         mp_items = [
             {
                 "id": str(item.product_id),
-                "title": item.product_name[:100],  # Máx 100 chars
+                "title": item.product_name[:100],
                 "description": item.product_sku[:250],
-                "picture_url": None,  # Opcional: URL de imagen del producto
-                "category_id": "others",  # Opcional: categoría de MercadoPago
                 "quantity": item.quantity,
                 "unit_price": float(item.unit_price),
                 "currency_id": order.currency.value
@@ -103,49 +98,32 @@ class PaymentService:
             "surname": " ".join(user_data.get("name", "").split()[1:]) if user_data.get("name") else "",
         }
         
-        # Agregar identificación si es requerida para el país
-        if order.currency.value in ["ARS", "BRL", "MXN"]:
-            mp_payer["identification"] = {
-                "type": "DNI" if order.currency.value == "ARS" else "CPF" if order.currency.value == "BRL" else "RFC",
-                "number": user_data.get("identification", "00000000")  # Validar formato según país
-            }
-        
         # 6. Crear preferencia en MercadoPago
         preference_data = {
             "items": mp_items,
             "payer": mp_payer,
             "back_urls": payment.back_urls,
             "notification_url": payment.notification_url,
-            "external_reference": str(payment.id),  # Nuestro payment_id como referencia
+            "external_reference": str(payment.id),
             "statement_descriptor": payment.statement_descriptor,
-            "auto_return": "approved",  # Redirigir automáticamente si el pago es aprobado
-            "binary_mode": True,  # Aprobar o rechazar inmediatamente
-            "expires": False,  # Opcional: hacer que la preferencia expire
-            "additional_info": {
-                "shipments": {
-                    "receiver_address": {
-                        "street_name": order.shipping_address[:255],
-                        # Agregar más campos de dirección si están disponibles
-                    }
-                },
-                "items": mp_items
-            }
+            "auto_return": "approved",
+            "binary_mode": True,
+            "expires": False,
         }
         
-        # 7. Llamar a API de MercadoPago
         mp_result = self.mp_client.create_preference(preference_data)
         
         if not mp_result["success"]:
             payment.reject(error_code="MP_API_ERROR", error_message=mp_result.get("error"))
             self.payment_repository.save(payment)
-            raise PaymentProcessingException(f"Error al crear preferencia en MercadoPago: {mp_result.get('error')}")
+            raise PaymentProcessingException(f"Error al crear preferencia: {mp_result.get('error')}")
         
-        # 8. Actualizar pago con IDs de MercadoPago
+        # 7. Actualizar pago con IDs de MercadoPago
         mp_data = mp_result["data"]
-        payment.external_id = mp_data.get("id")  # ID de la preferencia
+        payment.external_id = mp_data.get("id")
         payment = self.payment_repository.save(payment)
         
-        # 9. Retornar datos para redirección
+        # 8. Retornar datos para redirección
         return {
             "success": True,
             "payment_id": payment.id,
@@ -153,7 +131,6 @@ class PaymentService:
             "init_point": mp_result["sandbox_init_point"] if settings.MERCADOPAGO_SANDBOX else mp_result["init_point"],
             "amount": float(payment.amount),
             "currency": payment.currency.value,
-            "expires_at": mp_data.get("expiration_date")
         }
     
     # ==================== CREATE DIRECT PAYMENT ====================
@@ -179,7 +156,7 @@ class PaymentService:
         payment = Payment(
             id=None,
             order_id=order_id,
-            external_id=f"PAY-{uuid.uuid4().hex[:12].upper()}",
+            external_id=f"PAY-{uuid4().hex[:12].upper()}",
             amount=order.total_amount,
             currency=order.currency,
             status=PaymentStatus.IN_PROCESS,  # En proceso mientras se procesa la tarjeta
@@ -239,11 +216,9 @@ class PaymentService:
         }
     
     # ==================== WEBHOOK HANDLER ====================
-    
     def handle_webhook(self, topic: str, payment_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Procesa notificaciones webhook de MercadoPago.
-        
         topic: "payment" o "merchant_order"
         payment_data: datos del webhook (sin verificar firma por ahora)
         """
@@ -255,37 +230,64 @@ class PaymentService:
         if not mp_payment_id:
             return {"success": False, "error": "Payment ID no encontrado en webhook"}
         
-        # Buscar pago en nuestra BD
-        payment = self.payment_repository.find_by_mp_payment_id(str(mp_payment_id))
-        if not payment:
-            # Podría ser un pago creado fuera de nuestro sistema
-            return {"success": True, "message": "Pago no encontrado en nuestro sistema"}
-        
-        # Obtener datos actualizados del pago desde MercadoPago
-        mp_result = self.mp_client.get_payment(str(mp_payment_id))
-        if not mp_result["success"]:
-            return {"success": False, "error": "No se pudo obtener detalles del pago"}
-        
-        # Actualizar nuestro registro con los datos de MercadoPago
-        payment.update_from_mercadopago(mp_result["data"])
-        payment = self.payment_repository.save(payment)
-        
-        # Si el pago fue aprobado, actualizar la orden
-        if payment.is_completed:
-            order = self.order_repository.find_by_id(payment.order_id)
-            if order and order.status.value == "pending":
-                # TODO: Confirmar orden vía OrderService
-                pass
-        
-        return {
-            "success": True,
-            "payment_id": payment.id,
-            "status": payment.status.value,
-            "message": "Webhook procesado exitosamente"
-        }
+        log_with_context(
+            logger, "info", "Webhook recibido",
+            mp_payment_id=mp_payment_id,
+            topic=topic,
+            component="webhook_handler"
+        )
+        try:
+            # Buscar pago en nuestra BD
+            payment = self.payment_repository.find_by_mp_payment_id(str(mp_payment_id))
+            if not payment:
+                # Podría ser un pago creado fuera de nuestro sistema
+                return {"success": True, "message": "Pago no encontrado en nuestro sistema"}
+            
+            # Obtener datos actualizados del pago desde MercadoPago
+            mp_result = self.mp_client.get_payment(str(mp_payment_id))
+            if not mp_result["success"]:
+                return {"success": False, "error": "No se pudo obtener detalles del pago"}
+            
+            # Actualizar nuestro registro con los datos de MercadoPago
+            payment.update_from_mercadopago(mp_result["data"])
+            payment = self.payment_repository.save(payment)
+            
+            # Si el pago fue aprobado, actualizar la orden
+            if payment.is_completed:
+                order = self.order_repository.find_by_id(payment.order_id)
+                if order and order.status.value == "pending":
+                    # TODO: Confirmar orden vía OrderService
+                    pass
+            if payment:
+                logger.info(
+                    "Pago actualizado desde webhook",
+                    extra={
+                        "payment_id": payment.id,
+                        "old_status": payment.status.value,
+                        "message": "Webhook procesado exitosamente",
+                        "mp_payment_id": mp_payment_id
+                    }
+                )            
+            return {
+                "success": True,
+                "payment_id": payment.id,
+                "status": payment.status.value,
+                "message": "Webhook procesado exitosamente"
+            }      
+        except Exception as e:
+            logger.error(
+                "Error procesando webhook",
+                exc_info=True,  # ← Incluye traceback completo
+                extra={
+                    "mp_payment_id": mp_payment_id,
+                    "topic": topic,
+                    "error_type": type(e).__name__
+                }
+            )
+            return {"success": False, "error": str(e)}            
+
     
     # ==================== PAYMENT QUERIES ====================
-    
     def get_payment(self, payment_id: int, user_id: Optional[int] = None) -> Payment:
         """Obtiene un pago por ID con validación de autorización"""
         payment = self.payment_repository.find_by_id(payment_id)

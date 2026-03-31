@@ -32,7 +32,7 @@ class Product:
     
     # ==================== CAMPOS OPCIONALES (con default) ====================
     description: Optional[str] = None
-    currency: Currency = Currency.USD
+    currency: Currency = Currency.ARS
     cost_price: Optional[Decimal] = None
     discount_price: Optional[Decimal] = None
     stock: int = 0

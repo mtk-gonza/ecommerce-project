@@ -15,20 +15,29 @@ class PaymentRepositoryImpl(PaymentRepositoryPort):
         model = PaymentMapper.to_model(payment)
         
         if payment.id:
-            # Actualizar pago existente
+            # ========== ACTUALIZAR PAGO EXISTENTE ==========
             existing = self.db.query(PaymentModel).filter(PaymentModel.id == payment.id).first()
             if existing:
+                # Actualizar campos
                 for key, value in model.__dict__.items():
                     if key not in ['_sa_instance_state', 'id'] and hasattr(existing, key):
                         setattr(existing, key, value)
+                self.db.commit()
+                self.db.refresh(existing)
+                return PaymentMapper.to_entity(existing)
+            else:
+                # Si no existe pero tenemos ID, tratar como nuevo
+                self.db.add(model)
         else:
-            # Crear nuevo pago
+            # ========== CREAR NUEVO PAGO ==========
             self.db.add(model)
-            self.db.flush()
-            payment.id = model.id
         
+        # Commit para nuevos o si existing no se encontró
         self.db.commit()
         self.db.refresh(model)
+        
+        # Retornar entidad con el ID actualizado
+        payment.id = model.id
         return PaymentMapper.to_entity(model)
 
     def find_by_id(self, payment_id: int) -> Optional[Payment]:

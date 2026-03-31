@@ -3,6 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config.settings import settings
 from app.interfaces.api.v1.routes import auth_router, user_router, product_router, order_router, cart_router, payment_router
 from app.infrastructure.db.session import init_db
+from app.infrastructure.logging import setup_logging
+
+setup_logging(
+    env=settings.ENVIRONMENT,
+    log_level="DEBUG" if settings.DEBUG else "INFO",
+    log_dir=settings.BASE_DIR / "logs",
+    enable_file_logging=True,
+    enable_webhook_logging=True,
+)
 
 app = FastAPI(title="e-commerce fastapi", version="1.0.0")
 
