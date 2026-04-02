@@ -8,6 +8,9 @@ from app.domain.exceptions import (
     BusinessRuleException
 )
 from app.utils.slug_handler import generate_slug
+from app.infrastructure.logging import get_logger, log_with_context
+
+logger = get_logger(__name__)
 
 class CategoryService:
     def __init__(

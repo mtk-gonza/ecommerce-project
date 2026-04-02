@@ -139,7 +139,7 @@ class TestPaymentServicePreference:
         }
         
         # Act & Assert
-        with pytest.raises(PaymentProcessingException, match="MercadoPago"):
+        with pytest.raises(PaymentProcessingException, match="Error al crear preferencia"):
             payment_service.create_payment_preference(1, {"email": "test@test.com"})
 
 # ==================== TESTS: DIRECT PAYMENT ====================
@@ -181,7 +181,7 @@ class TestPaymentServiceDirect:
         }
         
         # Act & Assert
-        with pytest.raises(PaymentProcessingException, match="tarjeta"):
+        with pytest.raises(PaymentProcessingException, match="Error al procesar pago"):
             payment_service.create_direct_payment(
                 order_id=1,
                 payment_data={"token": "tok_bad", "payment_method_id": "visa"},

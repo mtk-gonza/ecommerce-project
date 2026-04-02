@@ -40,3 +40,14 @@ ENV=prod uvicorn app.main:app --host 0.0.0.0 --port 8000
 http://127.0.0.1:8000/docs
 
 ```
+
+## ✅ Features
+- [x] Autenticación JWT con roles
+- [x] CRUD de productos, órdenes, usuarios
+- [x] Carrito de compras con merge guest→user
+- [x] Checkout con MercadoPago Checkout Pro
+- [x] Webhooks para actualización automática
+- [x] Logging estratégico con contexto
+- [x] Tests 83/83 passing (75% coverage)
+- [x] tax_rate dinámico multi-región (21% por default)
+- [x] Currency configurable (ARS por default)

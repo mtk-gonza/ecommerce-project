@@ -4,30 +4,38 @@ from app.domain.enums import UserRole, AddressType
 from app.domain.ports.user_repository import UserRepositoryPort
 from app.domain.exceptions import EntityNotFoundException, ValidationError
 from app.infrastructure.security.password_handler import hash_password, verify_password
+from app.infrastructure.logging import get_logger, log_with_context
 
+logger = get_logger(__name__)
 class UserService:
     def __init__(self, user_repository: UserRepositoryPort):
         self.user_repository = user_repository
 
     def create_user(self, email: str, password: str, name: str, role: UserRole = UserRole.CUSTOMER, phone: Optional[str] = None) -> User:
-        # Verificar email único
-        existing = self.user_repository.find_by_email(email)
-        if existing:
-            raise ValidationError(f"El email {email} ya está registrado")
-        
-        # Hashear password
-        password_hash = hash_password(password)
-        
-        user = User(
-            id=None,
-            email=email,
-            password_hash=password_hash,
-            name=name,
-            role=role,
-            phone=phone,
-            is_active=True
-        )
-        return self.user_repository.save(user)
+        try:
+            existing = self.user_repository.find_by_email(email)
+            if existing:
+                raise ValidationError(f"El email {email} ya está registrado")
+            password_hash = hash_password(password)
+            
+            user = User(
+                id=None,
+                email=email,
+                password_hash=password_hash,
+                name=name,
+                role=role,
+                phone=phone,
+                is_active=True
+            )
+            user = self.user_repository.save(user)
+            logger.info("Usuario creado", extra={"user_id": user.id, "email": email, "role": user.role.value})
+            return user
+        except ValidationError as e:
+            logger.warning(f"Error en registro: {e}", extra={"email": email})
+            raise
+        except Exception as e:
+            logger.exception("Error en create_user", extra={"email": email, "error_type": type(e).__name__})
+            raise
 
     def get_user(self, user_id: int) -> User:
         user = self.user_repository.find_by_id(user_id)
@@ -70,8 +78,24 @@ class UserService:
         return self.user_repository.save(user)
 
     def change_password(self, user_id: int, old_password: str, new_password: str) -> User:
-        user = self.get_user(user_id)
-        if not self.verify_password(user, old_password):
-            raise ValidationError("Contraseña actual incorrecta")
-        user.password_hash = hash_password(new_password)
-        return self.user_repository.save(user)
+        try:
+            user = self.get_user(user_id)
+            if not self.verify_password(user, old_password):
+                logger.warning(
+                    "Cambio de contraseña fallido: contraseña actual incorrecta",
+                    extra={"user_id": user_id}
+                )
+                raise ValidationError("Contraseña actual incorrecta")
+            user.password_hash = hash_password(new_password)
+            user = self.user_repository.save(user)
+            logger.info(
+                "Contraseña cambiada exitosamente",
+                extra={"user_id": user_id, "email": user.email}
+            )
+            return user
+        except Exception as e:
+            logger.exception(
+                "Error en change_password",
+                extra={"user_id": user_id, "error_type": type(e).__name__}
+            )
+            raise

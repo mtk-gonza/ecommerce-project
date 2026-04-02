@@ -13,6 +13,9 @@ from app.domain.exceptions import (
 )
 from app.utils.slug_handler import generate_slug
 from app.domain.enums import ProductStatus
+from app.infrastructure.logging import get_logger, log_with_context
+
+logger = get_logger(__name__)
 
 class ProductService:
     """
@@ -31,47 +34,81 @@ class ProductService:
     # ==================== CREATE ====================
     
     def create_product(self, product_data: Dict[str, Any]) -> Product:
-        """Crea un nuevo producto con validaciones completas"""
-        
-        # 1. Validar SKU único
-        if 'sku' in product_data:
-            existing = self.product_repository.find_by_sku(product_data['sku'])
-            if existing:
-                raise ValidationError(f"El SKU '{product_data['sku']}' ya está registrado")
-        
-        # 2. Validar categoría si se proporciona
-        if product_data.get('category_id'):
-            if self.category_repository:
-                category = self.category_repository.find_by_id(product_data['category_id'])
-                if not category:
-                    raise EntityNotFoundException(f"Categoría {product_data['category_id']} no encontrada")
-                if not category.is_active:
-                    raise BusinessRuleException("No se pueden crear productos en categorías inactivas")
-        
-        # 3. Generar slug si no existe
-        if not product_data.get('slug') and 'name' in product_data:
-            base_slug = generate_slug(product_data['name'])
-            slug = base_slug
-            counter = 1
-            # Asegurar slug único
-            while self.product_repository.find_by_slug(slug):
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            product_data['slug'] = slug
-        elif product_data.get('slug'):
-            # Validar slug único si se proporciona
-            existing = self.product_repository.find_by_slug(product_data['slug'])
-            if existing:
-                raise ValidationError(f"El slug '{product_data['slug']}' ya está en uso")
-        
-        # 4. Validar precio de descuento
-        if product_data.get('discount_price') and product_data.get('base_price'):
-            if product_data['discount_price'] > product_data['base_price']:
-                raise InvalidPriceException("El precio con descuento no puede ser mayor al precio base")
-        
-        # 5. Crear y guardar entidad
-        product = Product(id=None, **{k: v for k, v in product_data.items() if k != 'id'})
-        return self.product_repository.save(product)
+        try:
+            """Crea un nuevo producto con validaciones completas"""
+            # 1. Validar SKU único
+            if 'sku' in product_data:
+                existing = self.product_repository.find_by_sku(product_data['sku'])
+                if existing:
+                    raise ValidationError(f"El SKU '{product_data['sku']}' ya está registrado")
+            # 2. Validar categoría si se proporciona
+            if product_data.get('category_id'):
+                if self.category_repository:
+                    category = self.category_repository.find_by_id(product_data['category_id'])
+                    if not category:
+                        raise EntityNotFoundException(f"Categoría {product_data['category_id']} no encontrada")
+                    if not category.is_active:
+                        raise BusinessRuleException("No se pueden crear productos en categorías inactivas")
+            # 3. Generar slug si no existe
+            if not product_data.get('slug') and 'name' in product_data:
+                base_slug = generate_slug(product_data['name'])
+                slug = base_slug
+                counter = 1
+                # Asegurar slug único
+                while self.product_repository.find_by_slug(slug):
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                product_data['slug'] = slug
+            elif product_data.get('slug'):
+                # Validar slug único si se proporciona
+                existing = self.product_repository.find_by_slug(product_data['slug'])
+                if existing:
+                    raise ValidationError(f"El slug '{product_data['slug']}' ya está en uso")
+            # 4. Validar precio de descuento
+            if product_data.get('discount_price') and product_data.get('base_price'):
+                if product_data['discount_price'] > product_data['base_price']:
+                    raise InvalidPriceException("El precio con descuento no puede ser mayor al precio base")
+            # 5. Crear y guardar entidad
+            product = Product(id=None, **{k: v for k, v in product_data.items() if k != 'id'})
+            product = Product(id=None, **{k: v for k, v in product_data.items() if k != 'id'})
+            product = self.product_repository.save(product)
+            # ✅ LOGGING: Producto creado
+            logger.info(
+                "Producto creado",
+                extra={
+                    "product_id": product.id,
+                    "name": product.name,
+                    "sku": product.sku,
+                    "slug": product.slug,
+                    "category_id": product.category_id,
+                    "base_price": float(product.base_price),
+                    "created_by": "system"  # Podés agregar user_id si lo pasás
+                }
+            )
+            
+            return product
+            
+        except (ValidationError, EntityNotFoundException, BusinessRuleException, InvalidPriceException) as e:
+            logger.warning(
+                f"Error de negocio al crear producto: {e}",
+                extra={
+                    "sku": product_data.get("sku"),
+                    "name": product_data.get("name"),
+                    "error_type": type(e).__name__,
+                    "component": "create_product"
+                }
+            )
+            raise
+        except Exception as e:
+            logger.exception(
+                "Error inesperado al crear producto",
+                extra={
+                    "sku": product_data.get("sku"),
+                    "error_type": type(e).__name__,
+                    "component": "create_product"
+                }
+            )
+            raise
 
     def create_product_with_media(
         self,
@@ -196,40 +233,64 @@ class ProductService:
 
     # ==================== UPDATE ====================
     
-    def update_product(self, product_id: int, product_data: Dict[str, Any]) -> Product:
-        """Actualiza un producto existente"""
-        product = self.get_product(product_id)
-        
-        # Campos protegidos (no se pueden actualizar)
-        protected_fields = ['id', 'created_at', 'sku', 'slug']
-        
-        # Validar SKU si se intenta cambiar
-        if 'sku' in product_data and product_data['sku'] != product.sku:
-            existing = self.product_repository.find_by_sku(product_data['sku'])
-            if existing and existing.id != product_id:
-                raise ValidationError(f"El SKU '{product_data['sku']}' ya está registrado")
-        
-        # Validar slug si se intenta cambiar
-        if 'slug' in product_data and product_data['slug'] != product.slug:
-            existing = self.product_repository.find_by_slug(product_data['slug'])
-            if existing and existing.id != product_id:
-                raise ValidationError(f"El slug '{product_data['slug']}' ya está en uso")
-        
-        # Validar precio de descuento
-        base_price = product_data.get('base_price', product.base_price)
-        discount_price = product_data.get('discount_price', product.discount_price)
-        if discount_price is not None and discount_price > base_price:
-            raise InvalidPriceException("El precio con descuento no puede ser mayor al precio base")
-        
-        # Actualizar campos permitidos
-        for key, value in product_data.items():
-            if key not in protected_fields and hasattr(product, key) and value is not None:
-                setattr(product, key, value)
-        
-        product._validate()
-        product.updated_at = datetime.now()
-        
-        return self.product_repository.save(product)
+    def update_product(self, product_id: int, product_data: Dict[str, Any]) -> Product:    
+        try:
+            """Actualiza un producto existente"""
+            product = self.get_product(product_id)
+            # Campos protegidos (no se pueden actualizar)
+            protected_fields = ['id', 'created_at', 'sku', 'slug']
+            # Validar SKU si se intenta cambiar
+            if 'sku' in product_data and product_data['sku'] != product.sku:
+                existing = self.product_repository.find_by_sku(product_data['sku'])
+                if existing and existing.id != product_id:
+                    raise ValidationError(f"El SKU '{product_data['sku']}' ya está registrado")
+            # Validar slug si se intenta cambiar
+            if 'slug' in product_data and product_data['slug'] != product.slug:
+                existing = self.product_repository.find_by_slug(product_data['slug'])
+                if existing and existing.id != product_id:
+                    raise ValidationError(f"El slug '{product_data['slug']}' ya está en uso")
+            # Validar precio de descuento
+            base_price = product_data.get('base_price', product.base_price)
+            discount_price = product_data.get('discount_price', product.discount_price)
+            if discount_price is not None and discount_price > base_price:
+                raise InvalidPriceException("El precio con descuento no puede ser mayor al precio base")
+            # Actualizar campos permitidos
+            for key, value in product_data.items():
+                if key not in protected_fields and hasattr(product, key) and value is not None:
+                    setattr(product, key, value)
+            product._validate()
+            product.updated_at = datetime.now()
+            product = self.product_repository.save(product)
+            # ✅ LOGGING: Producto actualizado (solo si cambió algo importante)
+            changed_fields = [k for k in product_data.keys() if k in ['base_price', 'discount_price', 'stock', 'status', 'is_visible']]
+            if changed_fields:
+                logger.info(
+                    "Producto actualizado",
+                    extra={
+                        "product_id": product_id,
+                        "name": product.name,
+                        "sku": product.sku,
+                        "changed_fields": changed_fields,
+                        "new_price": float(product.final_price) if 'base_price' in changed_fields or 'discount_price' in changed_fields else None,
+                        "new_stock": product.stock if 'stock' in changed_fields else None,
+                        "new_status": product.status.value if 'status' in changed_fields else None
+                    }
+                )
+            
+            return product
+            
+        except (EntityNotFoundException, ValidationError, BusinessRuleException, InvalidPriceException) as e:
+            logger.warning(
+                f"Error de negocio al actualizar producto: {e}",
+                extra={"product_id": product_id, "error_type": type(e).__name__}
+            )
+            raise
+        except Exception as e:
+            logger.exception(
+                "Error inesperado al actualizar producto",
+                extra={"product_id": product_id, "error_type": type(e).__name__}
+            )
+            raise
 
     def update_product_price(self, product_id: int, base_price: Decimal, discount_price: Optional[Decimal] = None) -> Product:
         """Actualiza solo el precio de un producto"""
@@ -292,12 +353,53 @@ class ProductService:
     # ==================== STOCK MANAGEMENT ====================
     
     def reduce_stock(self, product_id: int, quantity: int) -> Product:
-        """Reduce el stock (usado al crear órdenes)"""
-        if quantity <= 0:
-            raise ValidationError("La cantidad debe ser mayor a 0")
-        product = self.get_product(product_id)
-        product.reduce_stock(quantity)
-        return self.product_repository.save(product)
+        try:
+            if quantity <= 0:
+                raise ValidationError("La cantidad debe ser mayor a 0")
+            
+            product = self.get_product(product_id)
+            old_stock = product.stock
+            
+            product.reduce_stock(quantity)
+            product = self.product_repository.save(product)            
+            # ✅ LOGGING: Stock reducido (solo si es significativo o bajo threshold)
+            if product.stock <= product.low_stock_threshold:
+                logger.warning(
+                    "Stock bajo después de reducción",
+                    extra={
+                        "product_id": product_id,
+                        "product_name": product.name,
+                        "sku": product.sku,
+                        "old_stock": old_stock,
+                        "new_stock": product.stock,
+                        "quantity_reduced": quantity,
+                        "threshold": product.low_stock_threshold
+                    }
+                )
+            else:
+                logger.debug(  # DEBUG porque es operación frecuente
+                    "Stock reducido",
+                    extra={
+                        "product_id": product_id,
+                        "quantity": quantity,
+                        "remaining_stock": product.stock
+                    }
+                )
+            
+            return product
+            
+        except (EntityNotFoundException, ValidationError, InsufficientStockException) as e:
+            logger.warning(
+                f"Error al reducir stock: {e}",
+                extra={"product_id": product_id, "quantity": quantity, "error": str(e)}
+            )
+            raise
+        except Exception as e:
+            logger.exception(
+                "Error inesperado al reducir stock",
+                extra={"product_id": product_id, "quantity": quantity, "error_type": type(e).__name__}
+            )
+            raise
 
     def increase_stock(self, product_id: int, quantity: int) -> Product:
         """Aumenta el stock (usado al cancelar órdenes o recibir inventario)"""

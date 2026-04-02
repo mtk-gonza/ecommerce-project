@@ -7,12 +7,19 @@ from app.application.services.cart_service import CartService
 from app.domain.entities.cart import Cart, CartItem
 from app.domain.entities.product import Product
 from app.domain.enums import ProductStatus, Currency
-from app.domain.exceptions import EntityNotFoundException, ValidationError, InsufficientStockException, BusinessRuleException
+from app.domain.exceptions import (
+    EntityNotFoundException,
+    ValidationError,
+    InsufficientStockException,
+    BusinessRuleException
+)
+
 
 # ==================== FIXTURES ====================
 
 @pytest.fixture
 def mock_cart_repository():
+    """Mock del repositorio de carritos"""
     repo = Mock()
     repo.find_by_id = Mock(return_value=None)
     repo.find_by_user_id = Mock(return_value=None)
@@ -21,8 +28,10 @@ def mock_cart_repository():
     repo.delete = Mock(return_value=True)
     return repo
 
+
 @pytest.fixture
 def mock_product_repository():
+    """Mock del repositorio de productos"""
     repo = Mock()
     repo.find_by_id = Mock(return_value=None)
     repo.find_by_sku = Mock(return_value=None)
@@ -31,29 +40,61 @@ def mock_product_repository():
     repo.save = Mock(side_effect=lambda p: p)
     return repo
 
+
 @pytest.fixture
 def cart_service(mock_cart_repository, mock_product_repository):
+    """
+    Fixture de CartService con tax_rate default (21%).
+    Para tests que NO dependen del cálculo de impuestos.
+    """
     return CartService(
         cart_repository=mock_cart_repository,
-        product_repository=mock_product_repository
+        product_repository=mock_product_repository,
+        tax_rate=Decimal("0.21")
     )
+
+
+@pytest.fixture
+def cart_service_with_tax(mock_cart_repository, mock_product_repository, tax_rate_for_totals):
+    """
+    Fixture parametrizado de CartService para tests de cálculo de totales.
+    Se ejecuta automáticamente para cada tax_rate definido.
+    """
+    return CartService(
+        cart_repository=mock_cart_repository,
+        product_repository=mock_product_repository,
+        tax_rate=tax_rate_for_totals
+    )
+
 
 @pytest.fixture
 def sample_cart():
+    """Carrito de ejemplo para tests"""
     return Cart(id=1, user_id=1, session_id=None, items=[])
+
 
 @pytest.fixture
 def sample_product():
+    """Producto de ejemplo para tests"""
     return Product(
-        id=1, sku="TEST-001", slug="test-product", name="Producto Test",
-        description="Descripción", base_price=Decimal("99.99"),
-        stock=10, low_stock_threshold=5, currency=Currency.USD,
-        status=ProductStatus.ACTIVE, is_visible=True
+        id=1,
+        sku="TEST-001",
+        slug="test-product",
+        name="Producto Test",
+        description="Descripción",
+        base_price=Decimal("99.99"),
+        stock=10,
+        low_stock_threshold=5,
+        currency=Currency.USD,
+        status=ProductStatus.ACTIVE,
+        is_visible=True
     )
+
 
 # ==================== TESTS: GET/CREATE CART ====================
 
 class TestCartServiceGetOrCreate:
+    """Tests para métodos get_or_create_cart"""
     
     def test_get_or_create_cart_with_user(self, cart_service, mock_cart_repository, sample_cart):
         """Obtener o crear carrito para usuario registrado"""
@@ -72,7 +113,12 @@ class TestCartServiceGetOrCreate:
         """Crear nuevo carrito si no existe"""
         # Arrange
         mock_cart_repository.find_by_user_id.return_value = None
-        mock_cart_repository.save.side_effect = lambda c: Cart(id=999, **{k:v for k,v in c.__dict__.items() if k != 'id'})
+        mock_cart_repository.save.side_effect = lambda c: Cart(
+            id=999,
+            user_id=c.user_id,
+            session_id=c.session_id,
+            items=[]
+        )
         
         # Act
         result = cart_service.get_or_create_cart(user_id=1)
@@ -87,9 +133,11 @@ class TestCartServiceGetOrCreate:
         with pytest.raises(ValidationError, match="Se requiere"):
             cart_service.get_or_create_cart()
 
+
 # ==================== TESTS: ADD TO CART ====================
 
 class TestCartServiceAddItem:
+    """Tests para método add_to_cart"""
     
     def test_add_to_cart_success(self, cart_service, mock_cart_repository, mock_product_repository, sample_cart, sample_product):
         """Agregar producto al carrito exitosamente"""
@@ -129,7 +177,6 @@ class TestCartServiceAddItem:
     def test_add_to_cart_product_not_available(self, cart_service, mock_cart_repository, mock_product_repository, sample_cart, sample_product):
         """Error: producto no disponible"""
         # Arrange
-        from app.domain.enums import ProductStatus
         sample_product.status = ProductStatus.INACTIVE
         mock_cart_repository.find_by_id.return_value = sample_cart
         mock_product_repository.find_by_id.return_value = sample_product
@@ -141,7 +188,16 @@ class TestCartServiceAddItem:
     def test_add_to_cart_updates_existing_item(self, cart_service, mock_cart_repository, mock_product_repository, sample_cart, sample_product):
         """Actualizar cantidad si producto ya existe en carrito"""
         # Arrange
-        sample_cart.items = [CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))]
+        sample_cart.items = [
+            CartItem(
+                id=1,
+                product_id=1,
+                product_name="Test",
+                product_sku="TEST-001",
+                quantity=2,
+                unit_price=Decimal("99.99")
+            )
+        ]
         mock_cart_repository.find_by_id.return_value = sample_cart
         mock_product_repository.find_by_id.return_value = sample_product
         
@@ -152,14 +208,25 @@ class TestCartServiceAddItem:
         assert len(result.items) == 1
         assert result.items[0].quantity == 5
 
+
 # ==================== TESTS: UPDATE/REMOVE ITEMS ====================
 
 class TestCartServiceUpdateRemove:
+    """Tests para métodos update_cart_item, remove_from_cart, clear_cart"""
     
     def test_update_cart_item_success(self, cart_service, mock_cart_repository, mock_product_repository, sample_cart, sample_product):
         """Actualizar cantidad de item exitosamente"""
         # Arrange
-        sample_cart.items = [CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))]
+        sample_cart.items = [
+            CartItem(
+                id=1,
+                product_id=1,
+                product_name="Test",
+                product_sku="TEST-001",
+                quantity=2,
+                unit_price=Decimal("99.99")
+            )
+        ]
         mock_cart_repository.find_by_id.return_value = sample_cart
         mock_product_repository.find_by_id.return_value = sample_product
         
@@ -172,7 +239,16 @@ class TestCartServiceUpdateRemove:
     def test_update_cart_item_remove_if_zero(self, cart_service, mock_cart_repository, sample_cart):
         """Actualizar a cantidad 0 remueve el item"""
         # Arrange
-        sample_cart.items = [CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))]
+        sample_cart.items = [
+            CartItem(
+                id=1,
+                product_id=1,
+                product_name="Test",
+                product_sku="TEST-001",
+                quantity=2,
+                unit_price=Decimal("99.99")
+            )
+        ]
         mock_cart_repository.find_by_id.return_value = sample_cart
         
         # Act
@@ -200,7 +276,16 @@ class TestCartServiceUpdateRemove:
     def test_clear_cart_success(self, cart_service, mock_cart_repository, sample_cart):
         """Vaciar carrito completamente"""
         # Arrange
-        sample_cart.items = [CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))]
+        sample_cart.items = [
+            CartItem(
+                id=1,
+                product_id=1,
+                product_name="Test",
+                product_sku="TEST-001",
+                quantity=2,
+                unit_price=Decimal("99.99")
+            )
+        ]
         mock_cart_repository.find_by_id.return_value = sample_cart
         
         # Act
@@ -209,16 +294,30 @@ class TestCartServiceUpdateRemove:
         # Assert
         assert len(result.items) == 0
 
+
 # ==================== TESTS: CART MERGE ====================
 
 class TestCartServiceMerge:
+    """Tests para método merge_guest_cart"""
     
     def test_merge_guest_cart_success(self, cart_service, mock_cart_repository, mock_product_repository, sample_product):
         """Fusionar carrito de invitado a usuario"""
         # Arrange
-        guest_cart = Cart(id=1, user_id=None, session_id="guest-123", items=[
-            CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))
-        ])
+        guest_cart = Cart(
+            id=1,
+            user_id=None,
+            session_id="guest-123",
+            items=[
+                CartItem(
+                    id=1,
+                    product_id=1,
+                    product_name="Test",
+                    product_sku="TEST-001",
+                    quantity=2,
+                    unit_price=Decimal("99.99")
+                )
+            ]
+        )
         user_cart = Cart(id=2, user_id=1, session_id=None, items=[])
         
         mock_cart_repository.find_by_session_id.return_value = guest_cart
@@ -237,12 +336,36 @@ class TestCartServiceMerge:
     def test_merge_guest_cart_sums_quantities(self, cart_service, mock_cart_repository, mock_product_repository, sample_product):
         """Fusionar: sumar cantidades si mismo producto en ambos carritos"""
         # Arrange
-        guest_cart = Cart(id=1, user_id=None, session_id="guest-123", items=[
-            CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))
-        ])
-        user_cart = Cart(id=2, user_id=1, session_id=None, items=[
-            CartItem(id=2, product_id=1, product_name="Test", product_sku="TEST-001", quantity=3, unit_price=Decimal("99.99"))
-        ])
+        guest_cart = Cart(
+            id=1,
+            user_id=None,
+            session_id="guest-123",
+            items=[
+                CartItem(
+                    id=1,
+                    product_id=1,
+                    product_name="Test",
+                    product_sku="TEST-001",
+                    quantity=2,
+                    unit_price=Decimal("99.99")
+                )
+            ]
+        )
+        user_cart = Cart(
+            id=2,
+            user_id=1,
+            session_id=None,
+            items=[
+                CartItem(
+                    id=2,
+                    product_id=1,
+                    product_name="Test",
+                    product_sku="TEST-001",
+                    quantity=3,
+                    unit_price=Decimal("99.99")
+                )
+            ]
+        )
         
         sample_product.stock = 10  # Suficiente para 2+3=5
         mock_cart_repository.find_by_session_id.return_value = guest_cart
@@ -257,12 +380,24 @@ class TestCartServiceMerge:
         assert len(result.items) == 1
         assert result.items[0].quantity == 5
 
+
 # ==================== TESTS: TOTALS & VALIDATION ====================
 
 class TestCartServiceTotals:
+    """
+    Tests para cálculo de totales del carrito.
+    Usa fixture parametrizado para probar múltiples tax rates por región.
+    """
     
-    def test_calculate_cart_totals(self, cart_service, sample_cart):
-        """Calcular totales del carrito"""
+    def test_calculate_cart_totals(self, cart_service_with_tax, tax_rate_for_totals, sample_cart):
+        """
+        Calcular totales del carrito - parametrizado por región.
+        
+        Este test se ejecuta automáticamente para cada tax_rate definido:
+        - Argentina: 16%
+        - Uruguay: 21%
+        - Colombia: 19%
+        """
         # Arrange
         sample_cart.items = [
             CartItem(id=1, product_id=1, product_name="P1", product_sku="P1", quantity=2, unit_price=Decimal("10")),
@@ -270,28 +405,40 @@ class TestCartServiceTotals:
         ]
         
         # Act
-        totals = cart_service.calculate_cart_totals(sample_cart)
+        totals = cart_service_with_tax.calculate_cart_totals(sample_cart)
         
         # Assert
-        assert totals["subtotal"] == Decimal("40")  # 2*10 + 1*20
-        assert totals["tax_amount"] == Decimal("6.4")  # 40 * 0.16
+        subtotal = Decimal("40")  # 2*10 + 1*20
+        assert totals["subtotal"] == subtotal
+        
+        # ✅ El tax_amount depende del tax_rate inyectado por el fixture parametrizado
+        expected_tax = subtotal * tax_rate_for_totals
+        assert totals["tax_amount"] == expected_tax
+        
         assert totals["shipping_cost"] == Decimal("50")  # 40 < 500 threshold
-        assert totals["total"] == Decimal("96.4")  # 40 + 6.4 + 50
+        
+        expected_total = subtotal + expected_tax + Decimal("50")
+        assert totals["total"] == expected_total
     
-    def test_calculate_cart_totals_free_shipping(self, cart_service, sample_cart):
-        """Envío gratis si subtotal >= threshold"""
+    def test_calculate_cart_totals_free_shipping(self, cart_service_with_tax, tax_rate_for_totals, sample_cart):
+        """Envío gratis si subtotal >= threshold - parametrizado por región"""
         # Arrange
         sample_cart.items = [
             CartItem(id=1, product_id=1, product_name="P1", product_sku="P1", quantity=10, unit_price=Decimal("100")),
         ]
         
         # Act
-        totals = cart_service.calculate_cart_totals(sample_cart)
+        totals = cart_service_with_tax.calculate_cart_totals(sample_cart)
         
         # Assert
-        assert totals["subtotal"] == Decimal("1000")
+        subtotal = Decimal("1000")
+        assert totals["subtotal"] == subtotal
         assert totals["shipping_cost"] == Decimal("0")  # 1000 >= 500
-        assert totals["total"] == Decimal("1160")  # 1000 + 160 tax + 0 shipping
+        
+        # ✅ El tax_amount depende del tax_rate inyectado
+        expected_tax = subtotal * tax_rate_for_totals
+        expected_total = subtotal + expected_tax
+        assert totals["total"] == expected_total
     
     def test_validate_cart_for_checkout_empty(self, cart_service, mock_cart_repository, sample_cart):
         """Validar carrito vacío para checkout"""
@@ -308,7 +455,16 @@ class TestCartServiceTotals:
     def test_validate_cart_for_checkout_success(self, cart_service, mock_cart_repository, mock_product_repository, sample_cart, sample_product):
         """Validar carrito válido para checkout"""
         # Arrange
-        sample_cart.items = [CartItem(id=1, product_id=1, product_name="Test", product_sku="TEST-001", quantity=2, unit_price=Decimal("99.99"))]
+        sample_cart.items = [
+            CartItem(
+                id=1,
+                product_id=1,
+                product_name="Test",
+                product_sku="TEST-001",
+                quantity=2,
+                unit_price=Decimal("99.99")
+            )
+        ]
         mock_cart_repository.find_by_id.return_value = sample_cart
         mock_product_repository.find_by_id.return_value = sample_product
         

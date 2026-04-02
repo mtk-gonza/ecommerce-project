@@ -2,6 +2,9 @@ from decimal import Decimal
 from app.domain.entities.coupon import Coupon
 from app.domain.ports.coupon_repository import CouponRepositoryPort
 from app.domain.exceptions import EntityNotFoundException, BusinessRuleException
+from app.infrastructure.logging import get_logger, log_with_context
+
+logger = get_logger(__name__)
 
 class CouponService:
     def __init__(self, coupon_repository: CouponRepositoryPort):

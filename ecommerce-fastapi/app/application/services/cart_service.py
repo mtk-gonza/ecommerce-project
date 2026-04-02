@@ -11,23 +11,27 @@ from app.domain.exceptions import (
     BusinessRuleException
 )
 
+from app.infrastructure.logging import get_logger, log_with_context
+
+logger = get_logger(__name__)
+
 class CartService:
     """
     Servicio de Carrito - Capa de Aplicación
     Contiene toda la lógica de negocio relacionada con carritos
     """
-    
-    TAX_RATE = Decimal("0.16")  # 16% IVA (ajustar según país)
     DEFAULT_SHIPPING_COST = Decimal("50.00")
     FREE_SHIPPING_THRESHOLD = Decimal("500.00")
     
     def __init__(
         self,
         cart_repository: CartRepositoryPort,
-        product_repository: ProductRepositoryPort
+        product_repository: ProductRepositoryPort,
+        tax_rate: Decimal = Decimal("0.21")
     ):
         self.cart_repository = cart_repository
         self.product_repository = product_repository
+        self.tax_rate = tax_rate
 
     # ==================== GET/CREATE CART ====================
     
@@ -56,7 +60,7 @@ class CartService:
             raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
         
         subtotal = sum(item.quantity * item.unit_price for item in cart.items)
-        tax_amount = subtotal * self.TAX_RATE
+        tax_amount = subtotal * self.tax_rate
         shipping_cost = Decimal("0") if subtotal >= self.FREE_SHIPPING_THRESHOLD else self.DEFAULT_SHIPPING_COST
         discount_amount = Decimal("0")  # TODO: Integrar con coupon_service
         total = subtotal + tax_amount + shipping_cost - discount_amount
@@ -72,48 +76,91 @@ class CartService:
         }
 
     # ==================== ADD/UPDATE/REMOVE ITEMS ====================
-    
     def add_to_cart(self, cart_id: int, product_id: int, quantity: int) -> Cart:
         """Agrega un producto al carrito"""
-        if quantity <= 0:
-            raise ValidationError("La cantidad debe ser mayor a 0")
-        
-        cart = self.cart_repository.find_by_id(cart_id)
-        if not cart:
-            raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
-        
-        # Verificar producto y stock
-        product = self.product_repository.find_by_id(product_id)
-        if not product:
-            raise EntityNotFoundException(f"Producto {product_id} no encontrado")
-        if not product.is_available:
-            raise BusinessRuleException(f"El producto '{product.name}' no está disponible")
-        if product.stock < quantity:
-            raise InsufficientStockException(f"Stock insuficiente para '{product.name}'. Disponible: {product.stock}")
-        
-        # Verificar si el producto ya está en el carrito
-        existing_item = next((item for item in cart.items if item.product_id == product_id), None)
-        
-        if existing_item:
-            # Actualizar cantidad existente
-            new_quantity = existing_item.quantity + quantity
-            if product.stock < new_quantity:
+        try:
+            # 1. Validaciones iniciales (UNA SOLA VEZ)
+            if quantity <= 0:
+                raise ValidationError("La cantidad debe ser mayor a 0")
+            
+            cart = self.cart_repository.find_by_id(cart_id)
+            if not cart:
+                raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
+            
+            product = self.product_repository.find_by_id(product_id)
+            if not product:
+                raise EntityNotFoundException(f"Producto {product_id} no encontrado")
+            if not product.is_available:
+                raise BusinessRuleException(f"El producto '{product.name}' no está disponible")
+            if product.stock < quantity:
                 raise InsufficientStockException(f"Stock insuficiente para '{product.name}'. Disponible: {product.stock}")
-            existing_item.quantity = new_quantity
-        else:
-            # Agregar nuevo item
-            cart_item = CartItem(
-                id=None,
-                product_id=product_id,
-                product_name=product.name,
-                product_sku=product.sku,
-                quantity=quantity,
-                unit_price=product.final_price
+            
+            # 2. Verificar si el producto ya está en el carrito
+            existing_item = next((item for item in cart.items if item.product_id == product_id), None)
+            
+            if existing_item:
+                # ✅ CASO A: Producto ya existe → Actualizar cantidad
+                new_quantity = existing_item.quantity + quantity
+                if product.stock < new_quantity:
+                    raise InsufficientStockException(f"Stock insuficiente para '{product.name}'. Disponible: {product.stock}")
+                existing_item.quantity = new_quantity
+                is_new_item = False
+            else:
+                # ✅ CASO B: Producto nuevo → Agregar item
+                cart_item = CartItem(
+                    id=None,
+                    product_id=product_id,
+                    product_name=product.name,
+                    product_sku=product.sku,
+                    quantity=quantity,
+                    unit_price=product.final_price
+                )
+                cart.items.append(cart_item)
+                is_new_item = True
+            
+            # 3. Guardar cambios (UNA SOLA VEZ)
+            cart.updated_at = datetime.now()
+            cart = self.cart_repository.save(cart)
+            
+            # ✅ LOGGING
+            logger.info(
+                "Item agregado al carrito",
+                extra={
+                    "cart_id": cart_id,
+                    "user_id": cart.user_id,
+                    "product_id": product_id,
+                    "product_name": product.name,
+                    "quantity": quantity,
+                    "unit_price": float(product.final_price),
+                    "is_new_item": is_new_item,
+                    "total_items_in_cart": len(cart.items)
+                }
             )
-            cart.items.append(cart_item)
-        
-        cart.updated_at = datetime.now()
-        return self.cart_repository.save(cart)
+            
+            return cart
+            
+        except (EntityNotFoundException, ValidationError, BusinessRuleException, InsufficientStockException) as e:
+            logger.warning(
+                f"Error al agregar al carrito: {e}",
+                extra={
+                    "cart_id": cart_id,
+                    "product_id": product_id,
+                    "quantity": quantity,
+                    "error_type": type(e).__name__
+                }
+            )
+            raise
+        except Exception as e:
+            logger.exception(
+                "Error inesperado al agregar al carrito",
+                extra={
+                    "cart_id": cart_id,
+                    "product_id": product_id,
+                    "quantity": quantity,
+                    "error_type": type(e).__name__
+                }
+            )
+            raise
 
     def update_cart_item(self, cart_id: int, product_id: int, quantity: int) -> Cart:
         """Actualiza la cantidad de un item en el carrito"""
@@ -139,15 +186,45 @@ class CartService:
         return self.cart_repository.save(cart)
 
     def remove_from_cart(self, cart_id: int, product_id: int) -> Cart:
-        """Remueve un producto del carrito"""
-        cart = self.cart_repository.find_by_id(cart_id)
-        if not cart:
-            raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
-        
-        # Filtrar el item a remover
-        cart.items = [item for item in cart.items if item.product_id != product_id]
-        cart.updated_at = datetime.now()
-        return self.cart_repository.save(cart)
+        try:
+            cart = self.cart_repository.find_by_id(cart_id)
+            if not cart:
+                raise EntityNotFoundException(f"Carrito {cart_id} no encontrado")
+            
+            item_to_remove = next((item for item in cart.items if item.product_id == product_id), None)
+            product_name = item_to_remove.product_name if item_to_remove else f"Product-{product_id}"
+            quantity_removed = item_to_remove.quantity if item_to_remove else 0
+            
+            cart.items = [item for item in cart.items if item.product_id != product_id]
+            cart.updated_at = datetime.now()
+            cart = self.cart_repository.save(cart)
+            
+            logger.info(
+                "Item removido del carrito",
+                extra={
+                    "cart_id": cart_id,
+                    "user_id": cart.user_id,
+                    "product_id": product_id,
+                    "product_name": product_name,
+                    "quantity_removed": quantity_removed,
+                    "remaining_items": len(cart.items)
+                }
+            )
+            
+            return cart
+            
+        except EntityNotFoundException as e:
+            logger.warning(
+                f"Carrito no encontrado al remover item: {e}",
+                extra={"cart_id": cart_id, "product_id": product_id}
+            )
+            raise
+        except Exception as e:
+            logger.exception(
+                "Error inesperado al remover del carrito",
+                extra={"cart_id": cart_id, "product_id": product_id, "error_type": type(e).__name__}
+            )
+            raise
 
     def clear_cart(self, cart_id: int) -> Cart:
         """Vacía completamente el carrito"""
@@ -242,7 +319,7 @@ class CartService:
     def calculate_cart_totals(self, cart: Cart) -> Dict[str, Decimal]:
         """Calcula todos los totales del carrito"""
         subtotal = sum(item.quantity * item.unit_price for item in cart.items)
-        tax_amount = subtotal * self.TAX_RATE
+        tax_amount = subtotal * self.tax_rate
         shipping_cost = Decimal("0") if subtotal >= self.FREE_SHIPPING_THRESHOLD else self.DEFAULT_SHIPPING_COST
         discount_amount = Decimal("0")  # TODO: Integrar coupons
         total = subtotal + tax_amount + shipping_cost - discount_amount

@@ -22,10 +22,8 @@ class Settings(BaseSettings):
     API_PORT: int = 3050
     WEB_PORT: int = 3060
     API_V1_PREFIX: str = "/api/v1"
-
     SECRET_KEY: str = "ThisIsNotSecret"
     ALGORITHM: str = "HS256"
-
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ACCESS_TOKEN_EXPIRE_HOURS: int = 2
 
@@ -39,9 +37,7 @@ class Settings(BaseSettings):
     # 🔹 DATABASE
     # =========================
     DB_TYPE: str = "sqlite"
-
     SQLITE_DB: str = "ecommerce-dev.db"
-
     DB_USER: str | None = None
     DB_PASSWORD: str | None = None
     DB_HOST: str | None = None
@@ -52,7 +48,7 @@ class Settings(BaseSettings):
     # 🔹 CORS
     # =========================
     CORS_ALLOW_ORIGINS: str = "*"
-
+    
     # ==================== MERCADOPAGO ====================
     MERCADOPAGO_ACCESS_TOKEN: str
     MERCADOPAGO_PUBLIC_KEY: str
@@ -70,7 +66,6 @@ class Settings(BaseSettings):
     # Timeouts y reintentos
     PAYMENT_TIMEOUT_SECONDS: int = 30
     PAYMENT_MAX_ATTEMPTS: int = 3
-
     # =========================
     # ⚙️ PYDANTIC CONFIG
     # =========================
@@ -80,7 +75,6 @@ class Settings(BaseSettings):
         extra="ignore",  # 🔥 importante
         case_sensitive = True
     )
-
     # =========================
     # 🌐 CORS
     # =========================
@@ -89,7 +83,6 @@ class Settings(BaseSettings):
         if self.CORS_ALLOW_ORIGINS == "*":
             return ["*"]
         return [o.strip() for o in self.CORS_ALLOW_ORIGINS.split(",")]
-
     # =========================
     # 🗄️ DATABASE URL
     # =========================
@@ -105,7 +98,6 @@ class Settings(BaseSettings):
             f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
-
     # =========================
     # 🔹 HELPERS
     # =========================

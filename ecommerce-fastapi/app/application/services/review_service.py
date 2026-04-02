@@ -3,7 +3,9 @@ from app.domain.entities.review import Review
 from app.domain.ports.review_repository import ReviewRepositoryPort
 from app.domain.ports.product_repository import ProductRepositoryPort
 from app.domain.exceptions import EntityNotFoundException, ValidationError
+from app.infrastructure.logging import get_logger, log_with_context
 
+logger = get_logger(__name__)
 class ReviewService:
     def __init__(self, review_repository: ReviewRepositoryPort, product_repository: ProductRepositoryPort):
         self.review_repository = review_repository
