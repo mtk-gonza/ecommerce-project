@@ -1,12 +1,9 @@
-# interfaces/api/v1/schemas/cart_schema.py
-
 from pydantic import BaseModel, Field, ConfigDict
 from decimal import Decimal
 from datetime import datetime
 from typing import Optional, List
 
 # ==================== CART ITEM ====================
-
 class CartItemCreateSchema(BaseModel):
     """Schema para agregar item al carrito"""
     product_id: int = Field(..., ge=1)
@@ -31,8 +28,8 @@ class CartItemSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# ==================== CART ====================
 
+# ==================== CART ====================
 class CartCreateSchema(BaseModel):
     """Schema para crear carrito (interno)"""
     user_id: Optional[int] = None
@@ -79,8 +76,8 @@ class CartMergeSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# ==================== RESPONSES WRAPPER ====================
 
+# ==================== RESPONSES WRAPPER ====================
 class CartOperationResponseSchema(BaseModel):
     """Respuesta estándar para operaciones del carrito"""
     success: bool

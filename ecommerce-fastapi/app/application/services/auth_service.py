@@ -2,7 +2,7 @@ from app.domain.entities.user import User
 from app.application.services.user_service import UserService
 from app.domain.exceptions import AuthenticationException, AuthorizationException, ValidationError
 from app.infrastructure.security.jwt_handler import create_access_token, decode_access_token
-from app.infrastructure.logging import get_logger, log_with_context
+from app.infrastructure.logging import get_logger, safe_extra
 
 logger = get_logger(__name__)
 
@@ -41,12 +41,12 @@ class AuthService:
             
             logger.info(
                 "Login exitoso",
-                extra={
+                extra=safe_extra({
                     "user_id": user.id,
-                    "email": email,
-                    "role": user.role.value,
-                    "name": user.name
-                }
+                    "user_email": email,
+                    "user_role": user.role.value,
+                    "user_name": user.name
+                })
             )
             
             return {
@@ -74,12 +74,12 @@ class AuthService:
             user = self.user_service.create_user(email=email, password=password, name=name, phone=phone)
             logger.info(
                 "Usuario registrado",
-                extra={
+                extra=safe_extra({
                     "user_id": user.id,
-                    "email": email,
-                    "name": name,
-                    "role": user.role.value
-                }
+                    "user_email": email,
+                    "user_role": user.role.value,
+                    "user_name": user.name
+                })
             )
             
             return user
