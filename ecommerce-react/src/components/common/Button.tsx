@@ -1,8 +1,8 @@
 import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
-import styles from './../../styles/common/Button.module.css';
+import styles from '@/styles/common/Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'small' | 'medium' | 'large';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,6 +10,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   fullWidth?: boolean;
   isLoading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -20,6 +22,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'medium',
       fullWidth = false,
       isLoading = false,
+      leftIcon,
+      rightIcon,
       disabled,
       className = '',
       ...props
@@ -33,9 +37,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       fullWidth ? styles.fullWidth : '',
       isLoading ? styles.loading : '',
       className,
-    ]
-      .filter(Boolean)
-      .join(' ');
+    ].filter(Boolean).join(' ');
 
     return (
       <button
@@ -44,7 +46,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         {...props}
       >
-        {isLoading ? <span className="sr-only">Cargando...</span> : children}
+        {isLoading ? (
+          <span className={styles.loader} aria-hidden="true" />
+        ) : (
+          <>
+            {leftIcon && <span className={styles.icon}>{leftIcon}</span>}
+            {children}
+            {rightIcon && <span className={styles.icon}>{rightIcon}</span>}
+          </>
+        )}
+        {isLoading && <span className="sr-only">Cargando...</span>}
       </button>
     );
   }

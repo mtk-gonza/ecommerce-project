@@ -1,27 +1,41 @@
-// ✅ Validación en runtime (opcional pero recomendado)
-const getEnv = (key: string, defaultValue?: string): string => {
-  const value = import.meta.env[key];
-  if (value === undefined && defaultValue === undefined) {
-    console.warn(`⚠️ Variable de entorno ${key} no definida`);
-  }
-  return value ?? defaultValue ?? '';
-};
-
 export const env = {
-  // API Backend
-  API_URL: getEnv('VITE_API_URL', 'http://localhost:3050/api/v1'),
+  get API_URL(): string {
+    return (
+      window.APP_CONFIG?.API_URL || 'http://localhost:3050'
+    );
+  },
+
+  get API_V1_PREFIX(): string {
+    return (
+      window.APP_CONFIG?.API_V1_PREFIX || '/api/v1'
+    );
+  },
   
-  // MercadoPago
-  MERCADOPAGO_PUBLIC_KEY: getEnv('VITE_MERCADOPAGO_PUBLIC_KEY', ''),
+  get MERCADOPAGO_PUBLIC_KEY(): string {
+    return (
+      window.APP_CONFIG?.MERCADOPAGO_PUBLIC_KEY || 'TEST-4cdb5ed3-c72e-42ce-ad1c-babb27f7fb8c' 
+    );
+  },
   
-  // App
-  APP_NAME: 'Mi E-commerce',
-  APP_VERSION: '1.0.0',
+  get APP_VERSION(): string {
+    return (
+      window.APP_CONFIG?.APP_VERSION || '1.0.0'
+    );
+  },
   
-  // Flags
-  IS_DEV: import.meta.env.DEV,
-  IS_PROD: import.meta.env.PROD,
+  get ENVIRONMENT(): string {
+    return (
+      window.APP_CONFIG?.ENVIRONMENT || 'development'
+    );
+  },
+  
+  get IS_PROD(): boolean {
+    return this.ENVIRONMENT === 'production';
+  },
+  
+  get IS_DEV(): boolean {
+    return this.ENVIRONMENT === 'development';
+  },
 } as const;
 
-// ✅ Tipo exportado para usar en otros archivos
 export type Env = typeof env;

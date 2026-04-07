@@ -34,14 +34,3 @@ declare module '*.webp' {
   const content: string;
   export default content;
 }
-
-// ✅ Variables de entorno tipadas para import.meta.env
-interface ImportMetaEnv {
-  readonly VITE_API_URL: string;
-  readonly VITE_MERCADOPAGO_PUBLIC_KEY: string;
-  // Agregar más según necesites
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}

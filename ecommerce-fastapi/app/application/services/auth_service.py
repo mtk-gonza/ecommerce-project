@@ -16,21 +16,30 @@ class AuthService:
             if not user:
                 logger.info(
                     "Intento de login con email no registrado",
-                    extra={"email": email, "ip": "unknown"}  # Podés agregar IP desde el request
+                    extra={
+                        "email": email, 
+                        "ip": None
+                    }  # Podés agregar IP desde el request
                 )
                 raise AuthenticationException("Credenciales inválidas")
             
             if not user.is_active:
                 logger.warning(
                     "Intento de login con usuario inactivo",
-                    extra={"user_id": user.id, "email": email}
+                    extra={
+                        "user_id": user.id, 
+                        "email": email
+                    }
                 )
                 raise AuthenticationException("Usuario inactivo")
             
             if not self.user_service.verify_password(user, password):
                 logger.warning(
                     "Intento de login con contraseña incorrecta",
-                    extra={"email": email, "user_id": user.id}
+                    extra={
+                        "email": email, 
+                        "user_id": user.id
+                    }
                 )
                 raise AuthenticationException("Credenciales inválidas")
             

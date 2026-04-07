@@ -1,0 +1,13 @@
+.span {
+  font-size: var(--font-size-xs);
+  display: block;
+}
+
+.helper {
+  color: var(--color-gray-500);
+}
+
+.error {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
+}

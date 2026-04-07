@@ -25,14 +25,15 @@
   --color-text-placeholder: #a0aec0;
 
   /* 🟢🟡🔴 Colores de estado */
-  --color-success: #48bb78;
-  --color-success-light: #c6f6d5;
-  --color-warning: #ed8936;
-  --color-warning-light: #feebc8;
-  --color-error: #f56565;
-  --color-error-light: #fed7d7;
-  --color-info: #4299e1;
-  
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-error: #ef4444;
+  --color-error-light: #fee2e2;
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+
   /* 🔤 Tipografía */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
                'Helvetica Neue', Arial, sans-serif;
@@ -76,6 +77,13 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   
+  /* Opacidades */
+  --opacity-disabled: 0.6;
+  
+  /* Animaciones */
+  --animation-fade-in: fadeIn 0.2s ease-out;
+  --animation-slide-up: slideUp 0.3s ease-out;
+
   /* ⚡ Transiciones */
   --transition-fast: 150ms ease;
   --transition-base: 300ms ease;
@@ -85,8 +93,23 @@
   --z-dropdown: 100;
   --z-sticky: 200;
   --z-modal-overlay: 300;
-  --z-modal: 400;
+  --z-modal: 1000;
+  --z-toast: 1100;
   --z-tooltip: 500;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 🌙 Dark mode (opcional) */

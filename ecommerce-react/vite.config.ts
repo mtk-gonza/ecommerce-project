@@ -8,25 +8,17 @@ export default defineConfig({
   resolve: {
     alias: {
       // ✅ Path alias @ → src/
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
   
   server: {
     port: 5173,
-    open: true,  // Abrir navegador automáticamente
-    proxy: {
-      // ✅ Proxy para evitar CORS en desarrollo (opcional)
-      '/api': {
-        target: 'http://localhost:3050',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    open: true
   },
   
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: true
   },
 });

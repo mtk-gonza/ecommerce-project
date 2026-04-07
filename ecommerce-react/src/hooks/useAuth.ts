@@ -43,6 +43,10 @@ export const useAuth = () => {
       const response = await authApi.register(data);
       return response.data;
     },
+    onSuccess: (user) => {
+      console.log('✅ [useAuth] Usuario registrado:', user.email);
+      // No hacemos login automático, redirigimos a login para que confirmen email
+    },
   });
 
   return {
@@ -53,6 +57,7 @@ export const useAuth = () => {
     loginError: loginMutation.error,
     register: registerMutation.mutateAsync,
     isRegistering: registerMutation.isPending,
+    registerError: registerMutation.error,
     logout,
     isAuthenticated,
   };
