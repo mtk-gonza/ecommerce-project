@@ -1,3 +1,5 @@
+/* src/styles/common/Alert.module.css */
+
 .alert {
   display: flex;
   align-items: flex-start;
@@ -33,6 +35,7 @@
 .message {
   font-size: var(--font-size-sm);
   line-height: 1.5;
+  font-weight: 500;
 }
 
 .dismiss {
@@ -50,31 +53,42 @@
   opacity: 1;
 }
 
-/* Variants */
-.info {
-  background-color: var(--color-info-light);
-  color: var(--color-gray-900);
-  border-color: var(--color-info);
-}
-.info .icon { color: var(--color-info); }
-
-.success {
-  background-color: var(--color-success-light);
-  color: var(--color-gray-900);
-  border-color: var(--color-success);
-}
-.success .icon { color: var(--color-success); }
-
-.warning {
-  background-color: var(--color-warning-light);
-  color: var(--color-gray-900);
-  border-color: var(--color-warning);
-}
-.warning .icon { color: var(--color-warning); }
+/* ──────────────────────────────────────────────────────────────────
+   VARIANTES - Usando variables de tema
+   ────────────────────────────────────────────────────────────────── */
 
 .error {
   background-color: var(--color-error-light);
-  color: var(--color-gray-900);
-  border-color: var(--color-error);
+  color: var(--color-error-dark);      /* ✅ Texto legible */
+  border-color: var(--color-error-border);
 }
-.error .icon { color: var(--color-error); }
+.error .icon { 
+  color: var(--color-error-icon);
+}
+
+.success {
+  background-color: var(--color-success-light);
+  color: var(--color-success-dark);
+  border-color: var(--color-success-border);
+}
+.success .icon { 
+  color: var(--color-success-icon);
+}
+
+.warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+  border-color: var(--color-warning-border);
+}
+.warning .icon { 
+  color: var(--color-warning-icon);
+}
+
+.info {
+  background-color: var(--color-info-light);
+  color: var(--color-info-dark);
+  border-color: var(--color-info-border);
+}
+.info .icon { 
+  color: var(--color-info-icon);
+}

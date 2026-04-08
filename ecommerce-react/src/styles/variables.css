@@ -1,10 +1,15 @@
+/* src/styles/variables.css */
+
+/* ──────────────────────────────────────────────────────────────────
+   LIGHT MODE (Default)
+   ────────────────────────────────────────────────────────────────── */
 :root {
-  /* 🎨 Colores principales */
+  /* Colores Primarios */
   --color-primary: #0ea5e9;
   --color-primary-hover: #0284c7;
   --color-primary-active: #0369a1;
   
-  /* ⚪ Colores neutros */
+  /* Neutros - Light */
   --color-white: #ffffff;
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
@@ -18,86 +23,150 @@
   --color-gray-900: #111827;
   --color-black: #000000;
   
-  /* Colores de texto - MÁS OSCUROS */
-  --color-text-primary: #1a202c;
-  --color-text-secondary: #4a5568;
-  --color-text-tertiary: #718096;
-  --color-text-placeholder: #a0aec0;
-
-  /* 🟢🟡🔴 Colores de estado */
-  --color-success: #10b981;
-  --color-success-light: #d1fae5;
-  --color-warning: #f59e0b;
-  --color-warning-light: #fef3c7;
+  /* Fondos */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  
+  /* Texto */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-inverse: #ffffff;
+  
+  /* Bordes */
+  --color-border-light: #e5e7eb;
+  --color-border-medium: #d1d5db;
+  --color-border-dark: #9ca3af;
+  
+  /* Estado */
   --color-error: #ef4444;
-  --color-error-light: #fee2e2;
+  --color-error-light: #fef2f2;
+  --color-error-dark: #991b1b;
+  --color-error-border: #fca5a5;
+  
+  --color-success: #10b981;
+  --color-success-light: #f0fdf4;
+  --color-success-dark: #166534;
+  
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-warning-dark: #92400e;
+  
   --color-info: #3b82f6;
-  --color-info-light: #dbeafe;
-
-  /* 🔤 Tipografía */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
-               'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'Fira Code', 'Courier New', monospace;
+  --color-info-light: #eff6ff;
+  --color-info-dark: #1e40af;
   
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.875rem;  /* 30px */
-  
+  /* Tipografía */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
   
-  /* 📏 Espaciado (escala de 4px) */
-  --spacing-1: 0.25rem;   /* 4px */
-  --spacing-2: 0.5rem;    /* 8px */
-  --spacing-3: 0.75rem;   /* 12px */
-  --spacing-4: 1rem;      /* 16px */
-  --spacing-5: 1.25rem;   /* 20px */
-  --spacing-6: 1.5rem;    /* 24px */
-  --spacing-8: 2rem;      /* 32px */
-  --spacing-10: 2.5rem;   /* 40px */
-  --spacing-12: 3rem;     /* 48px */
-  --spacing-16: 4rem;     /* 64px */
+  /* Espaciado */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
   
-  /* 🔘 Border radius */
-  --radius-sm: 0.25rem;   /* 4px */
-  --radius-md: 0.375rem;  /* 6px */
-  --radius-lg: 0.5rem;    /* 8px */
-  --radius-xl: 0.75rem;   /* 12px */
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
   --radius-full: 9999px;
   
-  /* 🌑 Shadows */
+  /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
   
-  /* Opacidades */
-  --opacity-disabled: 0.6;
-  
-  /* Animaciones */
-  --animation-fade-in: fadeIn 0.2s ease-out;
-  --animation-slide-up: slideUp 0.3s ease-out;
-
-  /* ⚡ Transiciones */
+  /* Transiciones */
   --transition-fast: 150ms ease;
   --transition-base: 300ms ease;
   --transition-slow: 500ms ease;
   
-  /* 📊 Z-index layers */
+  /* Z-Index */
   --z-dropdown: 100;
   --z-sticky: 200;
-  --z-modal-overlay: 300;
   --z-modal: 1000;
   --z-toast: 1100;
-  --z-tooltip: 500;
+  
+  /* Opacidad */
+  --opacity-disabled: 0.6;
 }
 
+/* ──────────────────────────────────────────────────────────────────
+   DARK MODE (Manual - clase .dark en html)
+   ────────────────────────────────────────────────────────────────── */
+html.dark {
+  /* Neutros - Dark */
+  --color-white: #1f2937;
+  --color-gray-50: #111827;
+  --color-gray-100: #1f2937;
+  --color-gray-200: #374151;
+  --color-gray-300: #4b5563;
+  --color-gray-400: #6b7280;
+  --color-gray-500: #9ca3af;
+  --color-gray-600: #d1d5db;
+  --color-gray-700: #e5e7eb;
+  --color-gray-800: #f3f4f6;
+  --color-gray-900: #f9fafb;
+  
+  /* Fondos */
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  
+  /* Texto */
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #e5e7eb;
+  --color-text-tertiary: #d1d5db;
+  
+  /* Bordes */
+  --color-border-light: #374151;
+  --color-border-medium: #4b5563;
+  --color-border-dark: #6b7280;
+  
+  /* Estado */
+  --color-error-light: #7f1d1d;
+  --color-error-dark: #fecaca;
+  --color-error-border: #991b1b;
+  
+  --color-success-light: #14532d;
+  --color-success-dark: #bbf7d0;
+  
+  --color-warning-light: #78350f;
+  --color-warning-dark: #fef3c7;
+  
+  --color-info-light: #1e3a8a;
+  --color-info-dark: #dbeafe;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ANIMACIONES
+   ────────────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -110,14 +179,4 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* 🌙 Dark mode (opcional) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-white: #111827;
-    --color-gray-50: #1f2937;
-    --color-gray-100: #374151;
-    --color-gray-900: #f9fafb;
-  }
 }

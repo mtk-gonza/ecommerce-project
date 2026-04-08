@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/common/Button';
 import styles from './../styles/pages/DashboardPage.module.css';
 
-export default function DashboardPage() {
+export function DashboardPage() {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {

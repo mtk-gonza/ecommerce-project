@@ -13,7 +13,7 @@ import { FormSpan } from '@/components/common/FormSpan';
 
 import styles from '@/styles/pages/RegisterPage.module.css';
 
-export default function RegisterPage() {
+export function RegisterPage() {
   const [formData, setFormData] = useState<RegisterData>({
     email: '', password: '', name: '', phone: '',
   });

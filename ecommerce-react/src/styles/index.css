@@ -1,18 +1,30 @@
+/* src/styles/index.css */
+@import './variables.css';
+@import './reset.css';
 @import './globals.css';
 
-/* Estilos específicos del root */
+/* Estructura Base de la App */
 #root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Animación de fade-in para páginas */
-.page-enter {
-  animation: fadeIn 0.3s ease-in;
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+main {
+  flex: 1;
+}
+
+/* Body con transición suave entre temas */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-base), 
+              color var(--transition-base);
 }

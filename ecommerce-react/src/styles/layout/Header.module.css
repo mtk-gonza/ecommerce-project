@@ -1,0 +1,347 @@
+/* ──────────────────────────────────────────────────────────────────
+   1. HEADER BASE
+   ────────────────────────────────────────────────────────────────── */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-base),
+              border-color var(--transition-base);
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-4) var(--spacing-6);
+  gap: var(--spacing-4);
+  position: relative; /* ✅ Necesario para que el menú absolute se posicione respecto al header */
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   2. LOGO
+   ────────────────────────────────────────────────────────────────── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+  transition: color var(--transition-fast);
+}
+
+.logo:hover {
+  color: var(--color-primary);
+}
+
+.logoIcon {
+  font-size: var(--font-size-2xl);
+}
+
+.logoText {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .logoText {
+    display: inline;
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   3. DESKTOP NAVIGATION
+   ────────────────────────────────────────────────────────────────── */
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+  }
+}
+
+.navLink {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+  position: relative;
+}
+
+.navLink:hover {
+  color: var(--color-primary);
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  transition: width var(--transition-fast);
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   4. DESKTOP ACTIONS
+   ────────────────────────────────────────────────────────────────── */
+.desktopActions {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+@media (min-width: 768px) {
+  .desktopActions {
+    display: flex;
+  }
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.userName {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.logoutButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.logoutButton:hover {
+  background-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.loginButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.loginButton:hover {
+  color: var(--color-primary-hover);
+}
+
+.registerButton {
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast);
+}
+
+.registerButton:hover {
+  background-color: var(--color-primary-hover);
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   5. MOBILE MENU
+   ────────────────────────────────────────────────────────────────── */
+.mobileMenuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 24px;
+}
+
+.hamburger span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+}
+
+.mobileMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: calc(100% - var(--spacing-8));
+  max-width: 320px;
+  
+  /* ✅ ESTILOS VISUALES */
+  padding: var(--spacing-4) var(--spacing-6);
+  margin-right: var(--spacing-4);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-dropdown);
+  
+  /* ✅ ANIMACIÓN */
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.mobileNavLink {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-2) 0;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: color var(--transition-fast);
+}
+
+.mobileNavLink:hover {
+  color: var(--color-primary);
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.mobileUserName {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-2) 0;
+}
+
+.mobileLogoutButton {
+  width: 100%;
+  padding: var(--spacing-3);
+  background-color: var(--color-error);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.mobileLogoutButton:hover {
+  background-color: #dc2626;
+}
+
+.mobileAuthButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.mobileLoginButton {
+  width: 100%;
+  padding: var(--spacing-3);
+  text-align: center;
+  color: var(--color-primary);
+  text-decoration: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+}
+
+.mobileLoginButton:hover {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.mobileRegisterButton {
+  width: 100%;
+  padding: var(--spacing-3);
+  text-align: center;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  transition: background-color var(--transition-fast);
+}
+
+.mobileRegisterButton:hover {
+  background-color: var(--color-primary-hover);
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   DARK MODE
+   ────────────────────────────────────────────────────────────────── */
+html.dark .header {
+  background-color: var(--color-gray-800);
+  border-bottom-color: var(--color-gray-700);
+}
+
+html.dark .mobileMenu {
+  background-color: var(--color-gray-900);
+  border-bottom-color: var(--color-gray-700);
+}
+
+html.dark .mobileNavLink {
+  border-bottom-color: var(--color-gray-700);
+}
+
+html.dark .mobileActions {
+  border-top-color: var(--color-gray-700);
+}
